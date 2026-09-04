@@ -119,6 +119,44 @@
     color: var(--ink);
   }
 
+  .fetch-all-btn{
+    display:block;
+    width:100%;
+    font-size: 14px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border: 1.5px solid var(--ochre);
+    border-radius: 8px;
+    background: #f3e8cf;
+    color: var(--ochre-deep);
+    font-weight:bold;
+    cursor:pointer;
+  }
+  .fetch-all-btn:hover{ background:#ecdcb4; }
+  .fetch-all-btn:disabled{ opacity:.6; cursor:default; }
+  .fetch-all-progress{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    text-align:center;
+    margin: -6px 0 12px;
+  }
+
+  .network-banner{
+    max-width: 720px; margin: 0 auto;
+    background: #f7e4d6;
+    border-bottom: 2px solid var(--stamp-red);
+    color: #5a2a1a;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 12px 16px;
+  }
+  .network-banner code{
+    background: rgba(0,0,0,0.08);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 11.5px;
+  }
+
   .order-section{ margin-bottom: 14px; border: 1.5px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--paper); }
   .order-header{
     display:flex; align-items:center; gap: 12px;
@@ -183,7 +221,21 @@
   .photo-fallback{
     font-size: 34px;
     opacity: .55;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
   }
+  .photo-fallback-label{ font-size: 10.5px; color: var(--ink-soft); }
+  .photo-retry{
+    position:absolute; bottom:6px; right:6px;
+    font-family:'Courier New', monospace;
+    font-size: 10px;
+    background: rgba(255,255,255,0.85);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 2px 6px;
+    cursor: pointer;
+    color: var(--ink-soft);
+  }
+  .photo-retry:hover{ background:#fff; }
   .stamp{
     position:absolute; top:8px; right:8px;
     background: var(--stamp-red);
@@ -283,6 +335,8 @@
   <div class="progress-label sans" style="margin-top:4px;"><span id="scoreText">0 pontos</span><span id="scoreMax"></span></div>
 </header>
 
+<div id="networkBanner" class="network-banner sans" style="display:none;"></div>
+
 <main>
   <div class="filter-row">
     <input type="text" class="search-input" id="searchInput" placeholder="Buscar família ou nome popular…">
@@ -292,6 +346,8 @@
       <option value="faltando">Faltando</option>
     </select>
   </div>
+  <button class="fetch-all-btn sans" id="fetchAllBtn">📷 Montar fotos de todas as famílias</button>
+  <div class="fetch-all-progress sans" id="fetchAllProgress" style="display:none;"></div>
   <div id="ordersContainer"></div>
   <div class="no-results sans" id="noResults" style="display:none;">Nenhuma família encontrada com esse filtro.</div>
 </main>
@@ -312,6 +368,15 @@ const DATA = [
     { id:'sphingidae', nome:'Mariposas-gaviões', sci:'Sphingidae', rar:3, peri:1, dif:4, amb:'jardim, mata (noturna)', nota:'Voam pairando como beija-flores para se alimentar de néctar; atraídas por luz à noite.' },
     { id:'saturniidae', nome:'Mariposas-imperadoras', sci:'Saturniidae', rar:3, peri:4, dif:3, amb:'mata, área urbana (noturna)', nota:'Mariposas grandes, muitas com manchas em formato de olho nas asas; atraídas por luz à noite.' },
     { id:'erebidae', nome:'Mariposas-tigre e falenas', sci:'Erebidae', rar:2, peri:3, dif:2, amb:'jardim, mata (noturna)', nota:'Uma das famílias mais diversas de mariposas, indo de espécies pequenas a lagartas peludas conhecidas como "taturanas".' },
+    { id:'noctuidae', nome:'Mariposas-corujinhas', sci:'Noctuidae', rar:1, peri:1, dif:2, amb:'jardim, mata, área urbana (noturna)', nota:'Uma das famílias de mariposas mais numerosas, atraída por luzes à noite.' },
+    { id:'geometridae', nome:'Mariposas-mede-palmos', sci:'Geometridae', rar:2, peri:1, dif:2, amb:'mata, jardim (noturna)', nota:'Lagartas se deslocam arqueando o corpo, como se estivessem medindo palmos.' },
+    { id:'crambidae', nome:'Mariposas-das-gramíneas', sci:'Crambidae', rar:1, peri:1, dif:2, amb:'jardim, gramado, área aberta (noturna)', nota:'Mariposas pequenas comumente vistas voando baixo sobre gramados à noite.' },
+    { id:'pyralidae', nome:'Pequenas-mariposas-piraustídeas', sci:'Pyralidae', rar:1, peri:1, dif:2, amb:'jardim, área urbana (noturna)', nota:'Grupo diverso, com espécies associadas a grãos e produtos armazenados.' },
+    { id:'limacodidae', nome:'Mariposas-lagarta-babosa', sci:'Limacodidae', rar:3, peri:4, dif:2, amb:'mata, jardim', nota:'Lagartas lembram lesmas e têm cerdas urticantes que causam ardência forte ao toque.' },
+    { id:'megalopygidae', nome:'Lagartas-de-fogo', sci:'Megalopygidae', rar:3, peri:5, dif:2, amb:'mata, jardim', nota:'Lagartas peludas e fofas na aparência, mas escondem espinhos que causam queimação intensa.' },
+    { id:'psychidae', nome:'Mariposas-de-saquinho', sci:'Psychidae', rar:3, peri:1, dif:2, amb:'jardim, mata', nota:'Lagartas constroem e carregam um estojo de gravetos e detritos ao redor do corpo.' },
+    { id:'tineidae', nome:'Traças-dos-tecidos', sci:'Tineidae', rar:1, peri:1, dif:1, amb:'área urbana, dentro de casas', nota:'Larvas se alimentam de fibras, tecidos guardados e restos orgânicos secos.' },
+    { id:'gracillariidae', nome:'Mariposas-minadoras-de-folhas', sci:'Gracillariidae', rar:3, peri:1, dif:3, amb:'jardim, horta', nota:'Lagartas minúsculas cavam galerias visíveis dentro das folhas.' },
   ]},
   { id:'coleoptera', nome:'Besouros', sci:'Coleoptera', cor:'#4a4522', familias:[
     { id:'scarabaeidae', nome:'Besouros-rola-bosta e joaninhas-do-mato', sci:'Scarabaeidae', rar:2, peri:1, dif:2, amb:'mata, solo, área rural', nota:'Grupo variado que inclui besouros escavadores e grandes besouros-rinoceronte.' },
@@ -325,6 +390,12 @@ const DATA = [
     { id:'buprestidae', nome:'Besouros-joia', sci:'Buprestidae', rar:4, peri:1, dif:3, amb:'mata, área com árvores', nota:'Exoesqueleto com brilho metálico intenso; larvas se desenvolvem sob a casca de árvores.' },
     { id:'meloidae', nome:'Besouros-bolha', sci:'Meloidae', rar:3, peri:4, dif:2, amb:'área aberta, capim', nota:'Liberam uma substância irritante para a pele quando se sentem ameaçados.' },
     { id:'staphylinidae', nome:'Besouros-rove', sci:'Staphylinidae', rar:3, peri:2, dif:3, amb:'solo, folhiço, matéria em decomposição', nota:'Corpo alongado e élitros curtos que deixam o abdômen exposto; comuns no folhiço da mata.' },
+    { id:'carabidae', nome:'Besouros-corredores', sci:'Carabidae', rar:2, peri:2, dif:3, amb:'mata, jardim, sob pedras', nota:'Predadores ágeis de solo; algumas espécies liberam secreções defensivas quando perturbadas.' },
+    { id:'tenebrionidae', nome:'Cascudinhos', sci:'Tenebrionidae', rar:2, peri:1, dif:2, amb:'folhiço, sob troncos, solo', nota:'Besouros escuros e resistentes, ativos principalmente à noite.' },
+    { id:'dytiscidae', nome:'Besouros-mergulhadores', sci:'Dytiscidae', rar:3, peri:2, dif:3, amb:'lagoas, açudes, água parada', nota:'Nadam ativamente sob a água; adultos e larvas são predadores vorazes.' },
+    { id:'hydrophilidae', nome:'Besouros-aquáticos-nadadores', sci:'Hydrophilidae', rar:3, peri:1, dif:3, amb:'lagoas, açudes, água parada', nota:'Vivem em água doce parada, alimentando-se principalmente de matéria vegetal.' },
+    { id:'erotylidae', nome:'Besouros-dos-cogumelos', sci:'Erotylidae', rar:3, peri:1, dif:2, amb:'mata, fungos em troncos', nota:'Coloridos, associados a fungos e cogumelos que crescem em troncos caídos.' },
+    { id:'nitidulidae', nome:'Besouros-das-frutas', sci:'Nitidulidae', rar:2, peri:1, dif:1, amb:'jardim, frutas em decomposição', nota:'Pequenos besouros atraídos por frutas maduras ou fermentando.' },
   ]},
   { id:'hymenoptera', nome:'Formigas, abelhas e vespas', sci:'Hymenoptera', cor:'#7a3b12', familias:[
     { id:'formicidae', nome:'Formigas', sci:'Formicidae', rar:1, peri:2, dif:2, amb:'em toda parte: mata, restinga, mangue, urbano', nota:'Vivem em colônias organizadas; a região tem desde saúvas cortadeiras até formigas-de-fogo.' },
@@ -332,6 +403,19 @@ const DATA = [
     { id:'vespidae', nome:'Vespas e marimbondos', sci:'Vespidae', rar:2, peri:4, dif:3, amb:'jardim, beiral de casa, mata', nota:'Constroem ninhos de papel mastigado; muitas espécies são predadoras de outros insetos.' },
     { id:'crabronidae', nome:'Vespas-caçadoras solitárias', sci:'Crabronidae', rar:3, peri:3, dif:3, amb:'jardim, solo arenoso', nota:'Vespas solitárias que caçam presas (aranhas, insetos) para alimentar as larvas em ninhos individuais.' },
     { id:'ichneumonidae', nome:'Vespas-parasitoides', sci:'Ichneumonidae', rar:3, peri:2, dif:3, amb:'mata, jardim', nota:'Longo ovipositor usado para depositar ovos dentro de lagartas e outras larvas hospedeiras.' },
+    { id:'halictidae', nome:'Abelhas-do-suor', sci:'Halictidae', rar:2, peri:2, dif:2, amb:'jardim, flores, solo', nota:'Nidificam no solo; algumas espécies são atraídas pelo suor humano.' },
+    { id:'megachilidae', nome:'Abelhas-cortadeiras-de-folhas', sci:'Megachilidae', rar:2, peri:2, dif:2, amb:'jardim, flores', nota:'Recortam pedaços de folhas para forrar seus ninhos.' },
+    { id:'colletidae', nome:'Abelhas-envernizadoras', sci:'Colletidae', rar:3, peri:2, dif:2, amb:'restinga, solo arenoso, jardim', nota:'Revestem a célula do ninho com uma secreção parecida com celofane.' },
+    { id:'andrenidae', nome:'Abelhas-mineiras', sci:'Andrenidae', rar:3, peri:2, dif:2, amb:'solo arenoso, restinga, jardim', nota:'Nidificam em túneis escavados no solo, comuns em áreas arenosas.' },
+    { id:'sphecidae', nome:'Vespas-cavadoras', sci:'Sphecidae', rar:2, peri:3, dif:3, amb:'jardim, solo arenoso', nota:'Vespas solitárias que cavam ninhos no solo para armazenar presas paralisadas.' },
+    { id:'pompilidae', nome:'Vespas-caçadoras-de-aranhas', sci:'Pompilidae', rar:3, peri:4, dif:3, amb:'jardim, mata, solo', nota:'Caçam aranhas grandes para alimentar as larvas; ferroada considerada uma das mais dolorosas entre os insetos.' },
+    { id:'mutillidae', nome:'Formigas-de-veludo', sci:'Mutillidae', rar:3, peri:4, dif:3, amb:'solo arenoso, restinga, área aberta', nota:'Fêmeas não têm asas e lembram formigas peludas; ferroada muito dolorosa apesar do pequeno porte.' },
+    { id:'braconidae', nome:'Vespas-parasitoides-pequenas', sci:'Braconidae', rar:3, peri:1, dif:4, amb:'jardim, mata', nota:'Depositam ovos em lagartas e outros insetos hospedeiros, controlando naturalmente pragas.' },
+    { id:'chalcididae', nome:'Vespas-calcidídeas', sci:'Chalcididae', rar:4, peri:1, dif:4, amb:'jardim, mata', nota:'Pequenas vespas parasitoides com fêmures traseiros engrossados.' },
+    { id:'eulophidae', nome:'Microvespas-parasitoides', sci:'Eulophidae', rar:4, peri:1, dif:5, amb:'jardim, mata, folhagem', nota:'Vespas minúsculas que parasitam ovos e larvas de outros insetos.' },
+    { id:'encyrtidae', nome:'Microvespas-de-cochonilhas', sci:'Encyrtidae', rar:4, peri:1, dif:5, amb:'jardim, horta', nota:'Parasitam cochonilhas e outros insetos sugadores de seiva.' },
+    { id:'diapriidae', nome:'Microvespas-parasitoides-de-pupas', sci:'Diapriidae', rar:4, peri:1, dif:5, amb:'folhiço, mata', nota:'Parasitam pupas de moscas e outros insetos no solo e folhiço.' },
+    { id:'cynipidae', nome:'Vespas-das-galhas', sci:'Cynipidae', rar:3, peri:1, dif:3, amb:'mata, jardim', nota:'Suas larvas induzem a formação de galhas (protuberâncias) em folhas e caules de plantas.' },
   ]},
   { id:'diptera', nome:'Moscas e mosquitos', sci:'Diptera', cor:'#2e4a55', familias:[
     { id:'culicidae', nome:'Pernilongos e mosquitos', sci:'Culicidae', rar:1, peri:3, dif:1, amb:'área urbana, mangue, água parada', nota:'Fêmeas picam para obter sangue; região costeira favorece a proliferação perto de água parada.' },
@@ -339,6 +423,20 @@ const DATA = [
     { id:'tabanidae', nome:'Mutucas', sci:'Tabanidae', rar:3, peri:3, dif:4, amb:'área rural, mata, próximo a gado', nota:'Fêmeas dão picadas doloridas; atraídas por calor e movimento de animais grandes.' },
     { id:'asilidae', nome:'Moscas-assassinas', sci:'Asilidae', rar:3, peri:2, dif:4, amb:'área aberta, restinga', nota:'Predadoras ágeis que capturam outros insetos em pleno voo.' },
     { id:'muscidae', nome:'Moscas domésticas', sci:'Muscidae', rar:1, peri:1, dif:1, amb:'área urbana', nota:'Grupo bem conhecido, associado a ambientes humanos e restos orgânicos.' },
+    { id:'chironomidae', nome:'Mosquitos-pólvora', sci:'Chironomidae', rar:1, peri:1, dif:2, amb:'lagoas, água parada, mangue', nota:'Parecidos com pernilongos, mas não picam; formam grandes nuvens perto de água parada.' },
+    { id:'ceratopogonidae', nome:'Maruins', sci:'Ceratopogonidae', rar:1, peri:2, dif:1, amb:'mangue, praia, área costeira', nota:'Picadas irritantes de fêmeas minúsculas, muito comuns ao entardecer perto do mangue.' },
+    { id:'simuliidae', nome:'Borrachudos', sci:'Simuliidae', rar:2, peri:3, dif:1, amb:'próximo a riachos e água corrente', nota:'Fêmeas dão picadas doloridas; larvas se desenvolvem presas a pedras em água corrente.' },
+    { id:'psychodidae', nome:'Mosquitos-palha', sci:'Psychodidae', rar:1, peri:2, dif:1, amb:'área urbana, esgoto, banheiros', nota:'Pequenos mosquitos peludos; algumas espécies podem transmitir a leishmaniose.' },
+    { id:'tipulidae', nome:'Mosquitos-pernas-de-pau', sci:'Tipulidae', rar:2, peri:1, dif:2, amb:'jardim, mata, área úmida', nota:'Pernas muito longas e finas; apesar do porte, são inofensivos.' },
+    { id:'calliphoridae', nome:'Moscas-varejeiras', sci:'Calliphoridae', rar:1, peri:1, dif:1, amb:'área urbana, carcaças', nota:'Corpo com brilho metálico; atraídas por matéria orgânica em decomposição.' },
+    { id:'sarcophagidae', nome:'Moscas-de-carne', sci:'Sarcophagidae', rar:1, peri:1, dif:1, amb:'área urbana, carcaças', nota:'Reconhecidas pelo padrão listrado no tórax; associadas a carne em decomposição.' },
+    { id:'tephritidae', nome:'Moscas-das-frutas', sci:'Tephritidae', rar:2, peri:1, dif:2, amb:'horta, pomar, jardim', nota:'Asas com desenhos característicos; larvas se desenvolvem dentro de frutos.' },
+    { id:'drosophilidae', nome:'Moscas-da-fruta', sci:'Drosophilidae', rar:1, peri:1, dif:1, amb:'cozinha, frutas maduras', nota:'Moscas minúsculas atraídas por frutas maduras ou fermentando.' },
+    { id:'stratiomyidae', nome:'Moscas-soldado', sci:'Stratiomyidae', rar:2, peri:1, dif:2, amb:'jardim, compostagem', nota:'Larvas ajudam a decompor matéria orgânica; adultos muitas vezes imitam vespas.' },
+    { id:'bombyliidae', nome:'Moscas-abelha', sci:'Bombyliidae', rar:3, peri:1, dif:3, amb:'jardim, área florida', nota:'Corpo peludo que imita abelhas; pairam no ar junto a flores.' },
+    { id:'dolichopodidae', nome:'Moscas-de-pernas-longas', sci:'Dolichopodidae', rar:2, peri:1, dif:2, amb:'jardim, folhagem úmida', nota:'Pequenas e de brilho metálico verde ou dourado, comuns sobre folhas.' },
+    { id:'phoridae', nome:'Moscas-corcunda', sci:'Phoridae', rar:1, peri:1, dif:1, amb:'área urbana, matéria em decomposição', nota:'Corrida característica em ziguezague sobre superfícies antes de voar.' },
+    { id:'ephydridae', nome:'Moscas-das-margens', sci:'Ephydridae', rar:3, peri:1, dif:2, amb:'lagoas, mangue, água salobra', nota:'Toleram ambientes salobros e até salgados, comuns nas margens de corpos de água costeiros.' },
   ]},
   { id:'hemiptera', nome:'Cigarras e percevejos', sci:'Hemiptera', cor:'#3d5c2e', familias:[
     { id:'cicadidae', nome:'Cigarras', sci:'Cicadidae', rar:2, peri:1, dif:4, amb:'mata, área arborizada', nota:'Machos produzem o canto característico e alto do fim de tarde, típico da mata na região.' },
@@ -349,35 +447,126 @@ const DATA = [
     { id:'cicadellidae', nome:'Cigarrinhas-verdes', sci:'Cicadellidae', rar:1, peri:1, dif:1, amb:'jardim, gramado, horta', nota:'Pequenas, saltadoras, alimentam-se de seiva; muito comuns em folhagem baixa.' },
     { id:'belostomatidae', nome:'Barata-d\u2019água gigante', sci:'Belostomatidae', rar:4, peri:3, dif:3, amb:'lagoas, açudes, água doce parada', nota:'Percevejo aquático grande e predador, comum em corpos de água doce da região.' },
     { id:'gerridae', nome:'Andarilhos-da-água', sci:'Gerridae', rar:2, peri:1, dif:2, amb:'lagoas, riachos, água parada', nota:'Deslizam sobre a superfície da água aproveitando a tensão superficial.' },
+    { id:'lygaeidae', nome:'Percevejos-das-sementes', sci:'Lygaeidae', rar:2, peri:1, dif:1, amb:'jardim, área aberta, capim', nota:'Alimentam-se principalmente de sementes caídas no chão.' },
+    { id:'miridae', nome:'Percevejos-das-plantas', sci:'Miridae', rar:1, peri:1, dif:1, amb:'jardim, horta', nota:'Uma das famílias de percevejos mais numerosas, associada a plantas cultivadas.' },
+    { id:'tingidae', nome:'Percevejos-de-renda', sci:'Tingidae', rar:3, peri:1, dif:1, amb:'jardim, folhagem', nota:'Asas com padrão reticulado que lembram renda fina.' },
+    { id:'cercopidae', nome:'Cigarrinhas-espumantes', sci:'Cercopidae', rar:2, peri:1, dif:2, amb:'jardim, gramado, canavial', nota:'Ninfas se protegem dentro de uma espuma branca produzida sobre as plantas.' },
+    { id:'fulgoridae', nome:'Cigarrinhas-lanterna', sci:'Fulgoridae', rar:3, peri:1, dif:3, amb:'mata, jardim', nota:'Algumas espécies têm uma projeção na cabeça que lembra uma lanterna.' },
+    { id:'aphididae', nome:'Pulgões', sci:'Aphididae', rar:1, peri:1, dif:1, amb:'jardim, horta', nota:'Pequenos insetos sugadores de seiva que se reproduzem rapidamente em colônias.' },
+    { id:'pseudococcidae', nome:'Cochonilhas-algodão', sci:'Pseudococcidae', rar:1, peri:1, dif:1, amb:'jardim, plantas ornamentais', nota:'Corpo coberto por uma secreção branca e cerosa parecida com algodão.' },
+    { id:'coccidae', nome:'Cochonilhas-de-carapaça-mole', sci:'Coccidae', rar:2, peri:1, dif:1, amb:'jardim, plantas', nota:'Ficam praticamente imóveis, fixadas em caules e folhas, sugando seiva.' },
+    { id:'diaspididae', nome:'Cochonilhas-de-carapaça-dura', sci:'Diaspididae', rar:2, peri:1, dif:1, amb:'jardim, árvores frutíferas', nota:'Protegidas por uma carapaça rígida; podem causar manchas em frutos e folhas.' },
+    { id:'aleyrodidae', nome:'Moscas-brancas', sci:'Aleyrodidae', rar:1, peri:1, dif:1, amb:'horta, jardim', nota:'Pequenas e esbranquiçadas, voam em grupo quando a planta é sacudida.' },
+    { id:'notonectidae', nome:'Barqueiros-d\'água', sci:'Notonectidae', rar:2, peri:3, dif:2, amb:'lagoas, açudes', nota:'Nadam de costas na superfície da água; podem dar picadas dolorosas se manuseados.' },
+    { id:'nepidae', nome:'Escorpiões-d\'água', sci:'Nepidae', rar:3, peri:3, dif:3, amb:'lagoas, água parada', nota:'Possuem um longo tubo respiratório na cauda e patas dianteiras adaptadas para capturar presas.' },
   ]},
   { id:'orthoptera', nome:'Grilos e gafanhotos', sci:'Orthoptera', cor:'#5a6b2e', familias:[
     { id:'gryllidae', nome:'Grilos', sci:'Gryllidae', rar:1, peri:1, dif:2, amb:'jardim, quintal, mata (noturno)', nota:'O canto noturno característico é produzido pelos machos esfregando as asas anteriores.' },
     { id:'tettigoniidae', nome:'Esperanças', sci:'Tettigoniidae', rar:2, peri:2, dif:3, amb:'mata, jardim (noturno)', nota:'Antenas longas e finas; muitas espécies se camuflam perfeitamente como folhas verdes.' },
     { id:'acrididae', nome:'Gafanhotos', sci:'Acrididae', rar:1, peri:1, dif:2, amb:'área aberta, capim, restinga', nota:'Antenas curtas e pernas traseiras fortes para saltos longos; ativos durante o dia.' },
     { id:'romaleidae', nome:'Gafanhotos-gigantes', sci:'Romaleidae', rar:2, peri:1, dif:2, amb:'mata, área aberta', nota:'Espécies de maior porte entre os gafanhotos da região, algumas com cores vivas de aviso.' },
+    { id:'proscopiidae', nome:'Gafanhotos-graveto', sci:'Proscopiidae', rar:3, peri:1, dif:2, amb:'mata, restinga, capim', nota:'Corpo extremamente alongado, camuflado como um graveto fino entre a vegetação.' },
+    { id:'gryllotalpidae', nome:'Grilos-toupeira', sci:'Gryllotalpidae', rar:3, peri:1, dif:3, amb:'solo úmido, jardim, horta', nota:'Patas dianteiras adaptadas para escavar, semelhantes às de uma toupeira.' },
+    { id:'trigonidiidae', nome:'Grilos-das-plantas', sci:'Trigonidiidae', rar:3, peri:1, dif:2, amb:'jardim, folhagem', nota:'Grilos pequenos que vivem sobre a vegetação, em vez de no solo.' },
+    { id:'mogoplistidae', nome:'Grilos-escamados', sci:'Mogoplistidae', rar:4, peri:1, dif:3, amb:'folhiço, sob troncos', nota:'Corpo coberto por pequenas escamas que se soltam facilmente ao toque.' },
+    { id:'tetrigidae', nome:'Gafanhotos-pigmeus', sci:'Tetrigidae', rar:3, peri:1, dif:2, amb:'solo úmido, beira de lagoas', nota:'Pequeno porte e pronoto alongado cobrindo parte do abdômen; ativos perto de água.' },
   ]},
   { id:'odonata', nome:'Libélulas', sci:'Odonata', cor:'#1f5a63', familias:[
     { id:'libellulidae', nome:'Libélulas comuns', sci:'Libellulidae', rar:1, peri:1, dif:4, amb:'lagoas, mangue, açudes', nota:'Família mais numerosa de libélulas, com pouso frequente em galhos e fios perto da água.' },
     { id:'coenagrionidae', nome:'Donzelinhas', sci:'Coenagrionidae', rar:2, peri:1, dif:3, amb:'lagoas, riachos, água parada', nota:'Corpo fino e voo delicado; pousam com as asas fechadas ao longo do corpo.' },
     { id:'aeshnidae', nome:'Libélulas-imperadoras', sci:'Aeshnidae', rar:3, peri:1, dif:5, amb:'lagoas, açudes, mangue', nota:'Libélulas grandes e de voo veloz, patrulham territórios ao redor de corpos de água.' },
+    { id:'gomphidae', nome:'Libélulas-do-riacho', sci:'Gomphidae', rar:3, peri:1, dif:4, amb:'riachos, mangue', nota:'Olhos bem separados na cabeça; ninfas vivem enterradas no sedimento de riachos.' },
+    { id:'calopterygidae', nome:'Libélulas-metálicas-de-riacho', sci:'Calopterygidae', rar:3, peri:1, dif:3, amb:'riachos, mata ciliar', nota:'Asas coloridas e corpo com brilho metálico; voo lento e ondulado perto da água corrente.' },
+    { id:'protoneuridae', nome:'Donzelinhas-finas', sci:'Protoneuridae', rar:4, peri:1, dif:4, amb:'riachos sombreados de mata', nota:'Corpo muito fino e discreto, difícil de avistar na vegetação ao longo de riachos.' },
+    { id:'lestidae', nome:'Donzelinhas-espalhadas', sci:'Lestidae', rar:2, peri:1, dif:3, amb:'lagoas, brejos', nota:'Diferente de outras donzelinhas, pousam com as asas parcialmente abertas.' },
   ]},
   { id:'blattodea', nome:'Baratas e cupins', sci:'Blattodea', cor:'#4a3a2a', familias:[
     { id:'blattidae', nome:'Baratas comuns', sci:'Blattidae', rar:1, peri:1, dif:2, amb:'área urbana, mata, folhiço', nota:'Incluem espécies domésticas e outras silvestres que vivem no folhiço da mata.' },
     { id:'blaberidae', nome:'Baratas-do-mato', sci:'Blaberidae', rar:2, peri:1, dif:2, amb:'mata, folhiço', nota:'Grupo diverso de baratas silvestres, geralmente maiores e menos associadas a residências.' },
     { id:'termitidae', nome:'Cupins', sci:'Termitidae', rar:1, peri:1, dif:1, amb:'mata, área urbana, madeira', nota:'Vivem em colônias sociais complexas; constroem ninhos (cupinzeiros) visíveis em árvores e no solo.' },
+    { id:'blattellidae', nome:'Baratas-pequenas', sci:'Blattellidae', rar:1, peri:1, dif:1, amb:'área urbana, cozinha', nota:'Inclui espécies pequenas comumente encontradas dentro de residências.' },
+    { id:'rhinotermitidae', nome:'Cupins-subterrâneos', sci:'Rhinotermitidae', rar:1, peri:1, dif:1, amb:'solo, madeira, área urbana', nota:'Constroem galerias subterrâneas e são uma das principais causas de dano a estruturas de madeira.' },
+    { id:'kalotermitidae', nome:'Cupins-de-madeira-seca', sci:'Kalotermitidae', rar:2, peri:1, dif:1, amb:'madeira seca, móveis, árvores', nota:'Vivem diretamente dentro da madeira seca que consomem, sem contato com o solo.' },
   ]},
   { id:'mantodea', nome:'Louva-a-deus', sci:'Mantodea', cor:'#3a6b3a', familias:[
     { id:'mantidae', nome:'Louva-a-deus', sci:'Mantidae', rar:2, peri:2, dif:2, amb:'jardim, mata, restinga', nota:'Predadores de emboscada com pernas dianteiras adaptadas para capturar presas; excelente camuflagem entre folhas.' },
+    { id:'thespidae', nome:'Louva-a-deus-de-galho', sci:'Thespidae', rar:3, peri:2, dif:2, amb:'mata, arbustos', nota:'Corpo fino e alongado, camuflado entre galhos finos.' },
+    { id:'liturgusidae', nome:'Louva-a-deus-de-casca', sci:'Liturgusidae', rar:4, peri:2, dif:3, amb:'tronco de árvores, mata', nota:'Corpo achatado, perfeitamente camuflado sobre a casca de árvores.' },
+    { id:'acanthopidae', nome:'Louva-a-deus-espinhoso', sci:'Acanthopidae', rar:4, peri:2, dif:3, amb:'mata, folhagem densa', nota:'Possui projeções espinhosas no corpo que ajudam na camuflagem entre folhas secas.' },
   ]},
   { id:'dermaptera', nome:'Tesourinhas', sci:'Dermaptera', cor:'#6b4a2a', familias:[
     { id:'forficulidae', nome:'Tesourinhas', sci:'Forficulidae', rar:1, peri:1, dif:1, amb:'jardim, sob pedras e troncos', nota:'Reconhecidas pelo par de "pinças" no fim do abdômen, usadas em defesa e captura de presas pequenas.' },
+    { id:'labiduridae', nome:'Tesourinhas-de-praia', sci:'Labiduridae', rar:2, peri:1, dif:1, amb:'solo arenoso, praia, restinga', nota:'Tesourinhas maiores, comuns em solo arenoso perto da faixa de praia.' },
+    { id:'anisolabididae', nome:'Tesourinhas-de-solo', sci:'Anisolabididae', rar:2, peri:1, dif:1, amb:'jardim, sob pedras', nota:'Vivem escondidas sob pedras, troncos e entulho úmido.' },
+    { id:'spongiphoridae', nome:'Tesourinhas-pequenas', sci:'Spongiphoridae', rar:2, peri:1, dif:1, amb:'jardim, folhiço', nota:'Espécies de menor porte entre as tesourinhas da região.' },
   ]},
   { id:'phasmatodea', nome:'Bicho-pau', sci:'Phasmatodea', cor:'#3a5a3a', familias:[
     { id:'phasmatidae', nome:'Bicho-pau', sci:'Phasmatidae', rar:4, peri:1, dif:2, amb:'mata, jardim com arbustos', nota:'Mestres da camuflagem, imitando gravetos ou folhas para escapar de predadores.' },
+    { id:'heteronemiidae', nome:'Bicho-pau-comum', sci:'Heteronemiidae', rar:3, peri:1, dif:2, amb:'mata, jardim com arbustos', nota:'Corpo alongado em formato de graveto, um dos bichos-pau mais frequentemente avistados.' },
+    { id:'pseudophasmatidae', nome:'Bicho-pau-que-esguicha', sci:'Pseudophasmatidae', rar:4, peri:3, dif:2, amb:'mata', nota:'Quando ameaçado, libera um jato de secreção defensiva que pode irritar olhos e pele.' },
   ]},
   { id:'neuroptera', nome:'Formigas-leão e crisopídeos', sci:'Neuroptera', cor:'#5a4a2a', familias:[
     { id:'myrmeleontidae', nome:'Formigas-leão', sci:'Myrmeleontidae', rar:3, peri:1, dif:3, amb:'solo arenoso, restinga, dunas', nota:'Larvas cavam pequenas covas em areia fina para capturar formigas que caem lá dentro — comuns nas dunas da região.' },
     { id:'chrysopidae', nome:'Crisopídeos (olhos-de-ouro)', sci:'Chrysopidae', rar:2, peri:1, dif:2, amb:'jardim, horta', nota:'Adultos de asas verdes translúcidas; larvas são vorazes predadoras de pulgões.' },
+    { id:'ascalaphidae', nome:'Falsas-libélulas', sci:'Ascalaphidae', rar:4, peri:1, dif:4, amb:'área aberta, restinga', nota:'Antenas longas em forma de clava; voo rápido, ativo ao entardecer.' },
+    { id:'hemerobiidae', nome:'Crisopídeos-pardos', sci:'Hemerobiidae', rar:3, peri:1, dif:2, amb:'jardim, mata', nota:'Parecidos com os crisopídeos verdes, porém de coloração parda e menores.' },
+    { id:'mantispidae', nome:'Louva-a-deus-falso', sci:'Mantispidae', rar:4, peri:1, dif:3, amb:'jardim, mata', nota:'Pernas dianteiras raptoriais que imitam as de um louva-a-deus, mas pertence a outra ordem.' },
+  ]},
+  { id:'zygentoma', nome:'Traças-de-prata', sci:'Zygentoma', cor:'#6b6b4a', familias:[
+    { id:'lepismatidae', nome:'Traças-de-prata', sci:'Lepismatidae', rar:1, peri:1, dif:1, amb:'área urbana, dentro de casas, livros e papéis', nota:'Corpo prateado e achatado, movimenta-se em ziguezague rápido; comum em ambientes úmidos e escuros de casas.' },
+    { id:'nicoletiidae', nome:'Traças-de-caverna-e-solo', sci:'Nicoletiidae', rar:4, peri:1, dif:2, amb:'solo, ninhos de cupins e formigas, cavernas', nota:'Sem escamas prateadas como as traças comuns; vivem em ambientes escuros e úmidos, às vezes dentro de ninhos de outros insetos.' },
+  ]},
+  { id:'trichoptera', nome:'Tricópteros', sci:'Trichoptera', cor:'#2e5a6b', familias:[
+    { id:'hydropsychidae', nome:'Tricópteros-de-rede', sci:'Hydropsychidae', rar:3, peri:1, dif:3, amb:'riachos, água corrente', nota:'Larvas aquáticas constroem redes de seda para filtrar partículas de alimento da correnteza.' },
+    { id:'hydroptilidae', nome:'Tricópteros-microcaddis', sci:'Hydroptilidae', rar:4, peri:1, dif:4, amb:'riachos, lagoas', nota:'Espécies minúsculas entre os tricópteros, difíceis de notar a olho nu.' },
+    { id:'leptoceridae', nome:'Tricópteros-de-estojo-longo', sci:'Leptoceridae', rar:3, peri:1, dif:3, amb:'lagoas, riachos', nota:'Larvas constroem estojos alongados de detritos ou grãos de areia para se proteger.' },
+    { id:'philopotamidae', nome:'Tricópteros-de-rede-fina', sci:'Philopotamidae', rar:4, peri:1, dif:4, amb:'riachos limpos de mata', nota:'Constroem redes finas em forma de bolsa para capturar partículas na água corrente.' },
+    { id:'polycentropodidae', nome:'Tricópteros-caçadores', sci:'Polycentropodidae', rar:4, peri:1, dif:4, amb:'riachos, água corrente', nota:'Larvas predadoras que usam redes de seda para capturar pequenas presas.' },
+  ]},
+  { id:'ephemeroptera', nome:'Efeméras', sci:'Ephemeroptera', cor:'#5a7a8f', familias:[
+    { id:'baetidae', nome:'Efeméras-pequenas', sci:'Baetidae', rar:2, peri:1, dif:3, amb:'riachos, lagoas', nota:'Adultos vivem poucas horas ou dias; ninfas aquáticas indicam boa qualidade da água.' },
+    { id:'caenidae', nome:'Efeméras-de-cauda-curta', sci:'Caenidae', rar:3, peri:1, dif:3, amb:'lagoas, água parada', nota:'Diferem de outras efeméras por terem apenas duas caudas filamentares bem curtas.' },
+    { id:'leptophlebiidae', nome:'Efeméras-de-mata-ciliar', sci:'Leptophlebiidae', rar:4, peri:1, dif:4, amb:'riachos de mata', nota:'Ninfas vivem entre folhas caídas em riachos sombreados por mata preservada.' },
+    { id:'polymitarcyidae', nome:'Efeméras-escavadoras', sci:'Polymitarcyidae', rar:4, peri:1, dif:4, amb:'margens de rios e lagoas', nota:'Ninfas escavam túneis em sedimentos macios nas margens de corpos de água.' },
+  ]},
+  { id:'plecoptera', nome:'Plecópteros', sci:'Plecoptera', cor:'#3a5a4a', familias:[
+    { id:'perlidae', nome:'Moscas-de-pedra-comuns', sci:'Perlidae', rar:4, peri:1, dif:4, amb:'riachos de água limpa e corrente', nota:'Ninfas aquáticas muito sensíveis à poluição, indicadoras de água de boa qualidade.' },
+    { id:'gripopterygidae', nome:'Moscas-de-pedra-do-sul', sci:'Gripopterygidae', rar:5, peri:1, dif:4, amb:'riachos de mata preservada', nota:'Dependem de riachos bem conservados e sombreados, cada vez mais raros na região.' },
+  ]},
+  { id:'psocodea', nome:'Psocópteros e piolhos', sci:'Psocodea', cor:'#6b5a3a', familias:[
+    { id:'psocidae', nome:'Piolhos-de-livro-e-de-casca', sci:'Psocidae', rar:1, peri:1, dif:1, amb:'dentro de casa, cascas de árvore', nota:'Pequenos insetos que se alimentam de fungos e matéria orgânica em decomposição.' },
+    { id:'liposcelididae', nome:'Piolhos-de-livro-domésticos', sci:'Liposcelididae', rar:1, peri:1, dif:1, amb:'dentro de casa, livros, despensa', nota:'Comuns em ambientes úmidos, alimentando-se de mofo e resíduos orgânicos.' },
+    { id:'ectopsocidae', nome:'Psocópteros-de-folhagem', sci:'Ectopsocidae', rar:3, peri:1, dif:1, amb:'jardim, folhagem', nota:'Vivem sobre folhas, alimentando-se de fungos microscópicos e líquens.' },
+    { id:'pediculidae', nome:'Piolhos-humanos', sci:'Pediculidae', rar:1, peri:2, dif:1, amb:'associado ao corpo humano', nota:'Ectoparasitos que vivem no couro cabeludo ou nas roupas, alimentando-se de sangue.' },
+    { id:'pthiridae', nome:'Piolho-chato', sci:'Pthiridae', rar:2, peri:2, dif:1, amb:'associado ao corpo humano', nota:'Ectoparasito humano taxonomicamente distinto dos piolhos de cabeça.' },
+  ]},
+  { id:'thysanoptera', nome:'Tripes', sci:'Thysanoptera', cor:'#7a6b2a', familias:[
+    { id:'thripidae', nome:'Tripes-comuns', sci:'Thripidae', rar:1, peri:1, dif:1, amb:'jardim, flores, horta', nota:'Insetos minúsculos e alongados que se alimentam raspando tecido vegetal.' },
+    { id:'phlaeothripidae', nome:'Tripes-de-corpo-tubular', sci:'Phlaeothripidae', rar:3, peri:1, dif:1, amb:'folhiço, casca de árvore, fungos', nota:'Corpo com formato tubular, muitas espécies associadas a fungos e madeira em decomposição.' },
+    { id:'aeolothripidae', nome:'Tripes-predadores', sci:'Aeolothripidae', rar:3, peri:1, dif:1, amb:'jardim, flores', nota:'Diferente da maioria dos tripes, algumas espécies predam outros pequenos artrópodes.' },
+  ]},
+  { id:'siphonaptera', nome:'Pulgas', sci:'Siphonaptera', cor:'#5a3a3a', familias:[
+    { id:'pulicidae', nome:'Pulgas-comuns', sci:'Pulicidae', rar:1, peri:2, dif:1, amb:'associadas a cães, gatos, área urbana', nota:'Corpo achatado lateralmente e patas adaptadas para saltos longos.' },
+    { id:'rhopalopsyllidae', nome:'Pulgas-silvestres', sci:'Rhopalopsyllidae', rar:4, peri:2, dif:2, amb:'associadas a roedores e mamíferos silvestres', nota:'Grupo de pulgas tipicamente neotropical, associado à fauna silvestre.' },
+    { id:'tungidae', nome:'Bicho-de-pé', sci:'Tungidae', rar:2, peri:3, dif:1, amb:'solo arenoso, praia, restinga', nota:'Fêmea penetra na pele, geralmente nos pés, onde continua se desenvolvendo.' },
+  ]},
+  { id:'mecoptera', nome:'Moscas-escorpião', sci:'Mecoptera', cor:'#4a3a5a', familias:[
+    { id:'bittacidae', nome:'Moscas-escorpião-penduradas', sci:'Bittacidae', rar:5, peri:1, dif:4, amb:'mata úmida, sub-bosque', nota:'Capturam presas penduradas pelas patas dianteiras em vegetação baixa e úmida.' },
+    { id:'panorpidae', nome:'Moscas-escorpião-comuns', sci:'Panorpidae', rar:5, peri:1, dif:4, amb:'mata, folhagem úmida', nota:'Machos têm o abdômen terminado em uma estrutura curva que lembra um ferrão de escorpião, embora inofensiva.' },
+  ]},
+  { id:'embioptera', nome:'Embiópteros', sci:'Embioptera', cor:'#4a5a3a', familias:[
+    { id:'oligotomidae', nome:'Insetos-teia-comuns', sci:'Oligotomidae', rar:4, peri:1, dif:3, amb:'sob casca de árvore, folhiço', nota:'Constroem galerias de seda onde vivem em pequenos grupos, protegidos de predadores.' },
+    { id:'anisembiidae', nome:'Insetos-teia-neotropicais', sci:'Anisembiidae', rar:5, peri:1, dif:3, amb:'folhiço, sob pedras, mata', nota:'Grupo pouco visto, escondido em galerias de seda sob pedras e troncos.' },
+  ]},
+  { id:'zoraptera', nome:'Zorápteros', sci:'Zoraptera', cor:'#3a3a3a', familias:[
+    { id:'zorotypidae', nome:'Zorápteros', sci:'Zorotypidae', rar:5, peri:1, dif:4, amb:'madeira podre, folhiço úmido de mata', nota:'Insetos minúsculos e raramente avistados, vivendo em pequenas colônias sob madeira em decomposição.' },
+  ]},
+  { id:'strepsiptera', nome:'Estrepsípteros', sci:'Strepsiptera', cor:'#8f3a5a', familias:[
+    { id:'stylopidae', nome:'Estrepsípteros-de-abelhas', sci:'Stylopidae', rar:5, peri:1, dif:5, amb:'associados a abelhas e vespas parasitadas', nota:'Fêmeas passam a vida inteira dentro do corpo do inseto hospedeiro, quase nunca vistas livres.' },
+    { id:'halictophagidae', nome:'Estrepsípteros-de-cigarrinhas', sci:'Halictophagidae', rar:5, peri:1, dif:5, amb:'associados a cigarrinhas parasitadas', nota:'Parasitam cigarrinhas, deixando apenas a cabeça do macho adulto visível por pouco tempo.' },
+  ]},
+  { id:'megaloptera', nome:'Megalópteros', sci:'Megaloptera', cor:'#2a4a3a', familias:[
+    { id:'corydalidae', nome:'Corydalídeos', sci:'Corydalidae', rar:4, peri:3, dif:4, amb:'próximo a riachos e rios', nota:'Larvas aquáticas predadoras vivem sob pedras; machos adultos têm mandíbulas grandes usadas em disputas.' },
   ]},
 ];
 
@@ -428,27 +617,63 @@ function dotsHtml(valor, cor){
   return html + '</span>';
 }
 
-const imageCache = {};
-async function buscarFoto(sciName){
-  if(imageCache[sciName] !== undefined) return imageCache[sciName];
-  try{
-    const url = 'https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&prop=pageimages&piprop=thumbnail&pithumbsize=400&titles=' + encodeURIComponent(sciName);
-    const res = await fetch(url);
-    const data = await res.json();
-    const pages = data.query && data.query.pages;
-    let src = null;
-    if(pages){
-      const first = Object.values(pages)[0];
-      if(first && first.thumbnail && first.thumbnail.source){
-        src = first.thumbnail.source;
-      }
+const IMG_STORAGE_KEY = 'catalogo-insetos-jp-conde-v1-fotos';
+let fotoFixa = {};
+try{ fotoFixa = JSON.parse(localStorage.getItem(IMG_STORAGE_KEY)) || {}; }catch(e){ fotoFixa = {}; }
+const imageCache = Object.assign({}, fotoFixa);
+
+function salvarFotoFixa(sciName, src){
+  if(!src) return;
+  fotoFixa[sciName] = src;
+  localStorage.setItem(IMG_STORAGE_KEY, JSON.stringify(fotoFixa));
+}
+
+async function fetchWikiThumb(lang, sciName){
+  const url = `https://${lang}.wikipedia.org/w/api.php?action=query&format=json&origin=*&redirects=1&prop=pageimages&piprop=thumbnail&pithumbsize=500&titles=` + encodeURIComponent(sciName);
+  const res = await fetch(url);
+  const data = await res.json();
+  const pages = data.query && data.query.pages;
+  if(pages){
+    const first = Object.values(pages)[0];
+    if(first && first.thumbnail && first.thumbnail.source){
+      return first.thumbnail.source;
     }
-    imageCache[sciName] = src;
-    return src;
-  }catch(e){
-    imageCache[sciName] = null;
-    return null;
   }
+  return null;
+}
+
+async function fetchCommonsThumb(sciName){
+  const url = 'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=1&gsrsearch=' + encodeURIComponent(sciName + ' filetype:bitmap') + '&prop=imageinfo&iiprop=url&iiurlwidth=500';
+  const res = await fetch(url);
+  const data = await res.json();
+  const pages = data.query && data.query.pages;
+  if(pages){
+    const first = Object.values(pages)[0];
+    if(first && first.imageinfo && first.imageinfo[0]){
+      return first.imageinfo[0].thumburl || first.imageinfo[0].url || null;
+    }
+  }
+  return null;
+}
+
+async function buscarFoto(sciName, nomeComum){
+  if(imageCache[sciName] !== undefined) return imageCache[sciName];
+  const tentativas = [
+    () => fetchWikiThumb('en', sciName),
+    () => fetchWikiThumb('pt', sciName),
+    () => fetchCommonsThumb(sciName),
+    () => fetchCommonsThumb(nomeComum + ' insect'),
+  ];
+  let src = null;
+  for(const tentativa of tentativas){
+    try{
+      src = await tentativa();
+      if(src) break;
+    }catch(e){ /* tenta a próxima fonte */ }
+  }
+  imageCache[sciName] = src;
+  salvarFotoFixa(sciName, src);
+  return src;
 }
 
 function renderOrders(){
@@ -487,8 +712,11 @@ function renderOrders(){
       card.dataset.searchBlob = (fam.nome + ' ' + fam.sci + ' ' + ordem.nome).toLowerCase();
 
       card.innerHTML = `
-        <div class="photo-frame" data-sci="${fam.sci}">
-          <span class="photo-fallback">🪲</span>
+        <div class="photo-frame" data-sci="${fam.sci}" data-common="${fam.nome.replace(/"/g,'&quot;')}">
+          <div class="photo-fallback">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--order-color)" stroke-width="1.4"><ellipse cx="12" cy="13" rx="5" ry="7"/><circle cx="12" cy="5" r="2.4"/><path d="M8 8L3 5M16 8l5-3M7 12H2M17 12h5M8 17l-4 4M16 17l4 4"/></svg>
+            <span class="photo-fallback-label sans">sem foto ainda</span>
+          </div>
         </div>
         <div class="card-body">
           <p class="family-common">${fam.nome}</p>
@@ -539,18 +767,40 @@ function renderOrders(){
 
 function carregarFotosVisiveis(section){
   const frames = section.querySelectorAll('.photo-frame:not([data-loaded])');
-  frames.forEach(async frame=>{
-    frame.setAttribute('data-loaded','1');
-    const sci = frame.dataset.sci;
-    const src = await buscarFoto(sci);
-    if(src){
-      const img = document.createElement('img');
-      img.src = src;
-      img.alt = sci;
-      img.loading = 'lazy';
-      frame.innerHTML = '';
-      frame.appendChild(img);
-    }
+  frames.forEach(frame => carregarUmaFoto(frame));
+}
+
+async function carregarUmaFoto(frame){
+  frame.setAttribute('data-loaded','1');
+  const sci = frame.dataset.sci;
+  const common = frame.dataset.common || '';
+  const src = await buscarFoto(sci, common);
+  if(src){
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = sci;
+    img.loading = 'lazy';
+    img.onerror = () => { frame.removeAttribute('data-loaded'); mostrarFalha(frame); };
+    frame.innerHTML = '';
+    frame.appendChild(img);
+  } else {
+    mostrarFalha(frame);
+  }
+}
+
+function mostrarFalha(frame){
+  frame.innerHTML = `
+    <div class="photo-fallback">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--order-color)" stroke-width="1.4"><ellipse cx="12" cy="13" rx="5" ry="7"/><circle cx="12" cy="5" r="2.4"/><path d="M8 8L3 5M16 8l5-3M7 12H2M17 12h5M8 17l-4 4M16 17l4 4"/></svg>
+      <span class="photo-fallback-label sans">sem foto ainda</span>
+    </div>
+    <span class="photo-retry sans">tentar de novo</span>
+  `;
+  frame.querySelector('.photo-retry').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    delete imageCache[frame.dataset.sci];
+    frame.removeAttribute('data-loaded');
+    carregarUmaFoto(frame);
   });
 }
 
@@ -582,8 +832,68 @@ function aplicarFiltros(){
 document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
 document.getElementById('filterSelect').addEventListener('change', aplicarFiltros);
 
+document.getElementById('fetchAllBtn').addEventListener('click', montarTodasAsFotos);
+
+async function montarTodasAsFotos(){
+  const btn = document.getElementById('fetchAllBtn');
+  const progressEl = document.getElementById('fetchAllProgress');
+  btn.disabled = true;
+  progressEl.style.display = 'block';
+
+  const pendentes = todasFamilias.filter(f => !fotoFixa[f.sci]);
+  const total = pendentes.length;
+  if(total === 0){
+    progressEl.textContent = 'Todas as famílias já têm foto salva.';
+    btn.disabled = false;
+    setTimeout(()=>{ progressEl.style.display='none'; }, 3000);
+    return;
+  }
+
+  let feitas = 0;
+  for(const f of pendentes){
+    progressEl.textContent = `Buscando fotos… ${feitas + 1}/${total} (${f.sci})`;
+    await buscarFoto(f.sci, f.nome);
+    feitas++;
+    // pequena pausa para não sobrecarregar as APIs
+    await new Promise(r => setTimeout(r, 120));
+  }
+
+  progressEl.textContent = `Pronto! ${feitas} fotos buscadas e salvas neste navegador.`;
+  btn.disabled = false;
+  btn.textContent = '📷 Atualizar fotos que faltarem';
+
+  // recarrega as fotos já visíveis na tela com o que acabou de ser cacheado
+  document.querySelectorAll('.order-section.open').forEach(section=>{
+    section.querySelectorAll('.photo-frame').forEach(frame=>{
+      frame.removeAttribute('data-loaded');
+    });
+    carregarFotosVisiveis(section);
+  });
+
+  setTimeout(()=>{ progressEl.style.display='none'; }, 5000);
+}
+
 renderOrders();
 atualizarProgressoGeral();
+
+async function testarConexao(){
+  const banner = document.getElementById('networkBanner');
+  try{
+    const res = await fetch('https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&titles=Nymphalidae&prop=pageimages&piprop=thumbnail&pithumbsize=50');
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    await res.json();
+    // conexão ok, nada a avisar
+  }catch(err){
+    banner.style.display = 'block';
+    banner.innerHTML = `
+      ⚠️ Este visualizador parece estar bloqueando o acesso à internet, então as fotos não conseguem ser buscadas aqui
+      (erro técnico: <code>${(err && err.message) || err}</code>).<br>
+      Tente abrir este arquivo direto num navegador (Chrome, por exemplo) em vez do visualizador do app — lá as fotos devem carregar normalmente.
+    `;
+  }
+}
+testarConexao();
+
 // abre a primeira ordem e carrega as fotos dela de início
 const primeira = document.querySelector('.order-section');
 if(primeira){
